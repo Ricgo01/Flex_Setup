@@ -128,7 +128,7 @@ Token(LPAREN, '(', line=1, pos=8)
 -   `yytext` - Matched string
 -   `yyleng` - Length of matched string
 -   `codeLine` - Current line number
--   `position` - Current column position
+-   `position` - Current character position
 
 ## Notes
 
