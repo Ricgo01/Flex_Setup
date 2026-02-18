@@ -1,92 +1,60 @@
 %{
-/*
- * Archivo: scanner.l
- * Descripción: Lexer combinado que integra:
- *   - Identificadores Java (letra/guion bajo -> letras/dígitos/guion bajo)
- *   - Literales Numéricos (Enteros, Flotantes, Científicos, Hexadecimales)
- *   - Cadenas Literales (entre comillas dobles con escapes)
- *   - Operadores (Aritméticos, Relacionales, Lógicos)
- *   - Comentarios (Línea // y Bloque)
- *
- *   NOTA: NO HAY palabras reservadas, todas se detectan como identificadores simples.
- *
- * Compilación:
- *    flex scanner.l
- *    gcc lex.yy.c -o scanner
- *    ./scanner
- */
-
+    /* SECCION 1: DEFINICIONES DE C */
+    /* Aquí incluimos librerías y cualquier código C necesario antes del análisis */
 #include <stdio.h>
 %}
 
-/* Definiciones */
+/* SECCION 2: DEFINICIONES DE FLEX */
+/* Aquí creamos alias para expresiones regulares complejas y estados exclusivos */
+
+/* Definiciones básicas */
 DIGIT       [0-9]
 HEXDIGIT    [0-9a-fA-F]
 
-/* Declaración de estado para comentarios de bloque */
+/* Estado exclusivo para manejar comentarios de bloque */
 %x B_COMMENT
 
-/* Patrones Numéricos */
+/* Alias para patrones complejos */
 HEX         0[xX]{HEXDIGIT}+
 SCIENTIFIC  ({DIGIT}+(\.{DIGIT}*)?|\.{DIGIT}+)[eE][+-]?{DIGIT}+
 FLOAT       {DIGIT}+\.{DIGIT}+
 INTEGER     {DIGIT}+
-
-/* Patrón para Identificadores (Java style) */
 ID          [_a-zA-Z][_a-zA-Z0-9]*
-
-/* Patrón para String */
 STRING      \"(\\.|[^"\\])*\"
 
 %%
 
-    /* --- COMENTARIOS (Ignorados) --- */
-"//".*          ; 
-"/*"            { BEGIN(B_COMMENT); }
-<B_COMMENT>"*/" { BEGIN(INITIAL); }
-<B_COMMENT>\n   ; 
-<B_COMMENT>.    ; 
+/* SECCION 3: REGLAS DE ANÁLISIS */
+/* Aquí definimos qué hacer cuando encontramos cada patrón */
 
-    /* --- CADENAS DE TEXTO --- */
-{STRING}        { printf("LITERAL_CADENA: %s\n", yytext); }
+    /* Comentarios: Los ignoramos para limpiar el input */
+"//".*              ; 
+"/*"                { BEGIN(B_COMMENT); }
+<B_COMMENT>"*/"     { BEGIN(INITIAL); }
+<B_COMMENT>.|\n     ;
 
-    /* --- OPERADORES --- */
-    /* Aritméticos */
-"+"             { printf("OP_ARITMETICO: %s\n", yytext); }
-"-"             { printf("OP_ARITMETICO: %s\n", yytext); }
-"*"             { printf("OP_ARITMETICO: %s\n", yytext); }
-"/"             { printf("OP_ARITMETICO: %s\n", yytext); }
+    /* Cadenas y Operadores: Identificamos literales de texto y símbolos matemáticos/lógicos */
+{STRING}                        { printf("LITERAL_CADENA: %s\n", yytext); }
+"+"|"-"|"*"|"/"                 { printf("OP_ARITMETICO: %s\n", yytext); }
+"="                             { printf("OP_ASIGNACION: %s\n", yytext); }
+"=="|"!="|"<="|">="|"<"|">"     { printf("OP_RELACIONAL: %s\n", yytext); }
+"&&"|"||"|"!"                   { printf("OP_LOGICO: %s\n", yytext); }
 
-    /* Relacionales y Asignación */
-"="             { printf("OP_ASIGNACION: %s\n", yytext); }
-"=="            { printf("OP_RELACIONAL: %s\n", yytext); }
-"!="            { printf("OP_RELACIONAL: %s\n", yytext); }
-"<="            { printf("OP_RELACIONAL: %s\n", yytext); }
-">="            { printf("OP_RELACIONAL: %s\n", yytext); }
-"<"             { printf("OP_RELACIONAL: %s\n", yytext); }
-">"             { printf("OP_RELACIONAL: %s\n", yytext); }
+    /* Números e Identificadores: Clasificamos los diferentes tipos numéricos y variables */
+{HEX}               { printf("HEXADECIMAL: %s\n", yytext); }
+{SCIENTIFIC}        { printf("NOTACION CIENTIFICA: %s\n", yytext); }
+{FLOAT}             { printf("FLOTANTE: %s\n", yytext); }
+{INTEGER}           { printf("ENTERO: %s\n", yytext); }
+{ID}                { printf("IDENTIFICADOR VALIDO: %s\n", yytext); }
 
-    /* Lógicos */
-"&&"            { printf("OP_LOGICO: %s\n", yytext); }
-"||"            { printf("OP_LOGICO: %s\n", yytext); }
-"!"             { printf("OP_LOGICO: %s\n", yytext); }
-
-    /* --- LITERALES NUMÉRICOS --- */
-{HEX}           { printf("HEXADECIMAL: %s\n", yytext); }
-{SCIENTIFIC}    { printf("NOTACION CIENTIFICA: %s\n", yytext); }
-{FLOAT}         { printf("FLOTANTE: %s\n", yytext); }
-{INTEGER}       { printf("ENTERO: %s\n", yytext); }
-
-    /* --- IDENTIFICADORES --- */
-    /* Detecta cualquier secuencia de letras/números que empiece con letra o _ */
-{ID}            { printf("IDENTIFICADOR VALIDO: %s\n", yytext); }
-
-    /* --- OTROS --- */
-[ \t\n]+        ; /* Ignorar espacios */
-.               { printf("NO RECONOCIDO: %s\n", yytext); }
+    /* Otros: Ignoramos espacios en blanco y reportamos errores */
+[ \t\n]+            ; 
+.                   { printf("NO RECONOCIDO: %s\n", yytext); }
 
 %%
 
+/* SECCION 4: CÓDIGO DE USUARIO */
+/* Aquí va el punto de entrada (main) que inicia el análisis léxico */
 int main() {
     yylex();
     return 0;
